@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>타닥타닥 · 스트레스 풀기</title>
+<style>
+:root{--bg:#0e0e10;--card:#1a1a1d;--ink:#f1ece0;--mute:#8a8578;--line:#2f2f33;--accent:#d4af37;--ok:#d4af37;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard","Noto Sans KR",system-ui,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:20px;display:grid;grid-template-columns:1fr 280px;gap:16px}
+@media(max-width:760px){.wrap{grid-template-columns:1fr}}
+header{grid-column:1/-1}
+h1{margin:0;font-size:26px;color:var(--accent);letter-spacing:.06em}
+header p{margin:0;color:var(--mute)}
+h2{font-size:16px;margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:transparent;color:inherit;cursor:pointer;font:inherit;font-size:14px}
+.chip.on{background:var(--accent);color:#0e0e10;border-color:var(--accent);font-weight:700}
+.stage{text-align:center;padding:44px 6px 30px}
+.word{font-size:clamp(34px,8vw,64px);font-weight:700;letter-spacing:.04em;min-height:1.3em;word-break:keep-all}
+.word span{opacity:.3}
+.word span.d{opacity:1;color:var(--ok)}
+.word span.c{opacity:1;border-bottom:4px solid var(--accent)}
+.word.shake{animation:sh .18s}
+.word.ok{animation:ok .22s}
+@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes ok{50%{transform:scale(1.08)}}
+.next{margin-top:18px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap;color:var(--mute);font-size:18px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats div{border:1px solid var(--line);border-radius:12px;padding:10px}
+.stats b{display:block;font-size:24px;color:var(--accent)}
+.stats small{color:var(--mute)}
+.last{display:flex;align-items:center;gap:10px;margin-top:16px;color:var(--mute);font-size:14px}
+.cap{display:inline-block;min-width:48px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);border-bottom-width:4px;text-align:center;font-weight:700;color:var(--ink)}
+.cap.p{transform:translateY(2px);border-bottom-width:2px}
+.hint{color:var(--mute);font-size:13px;line-height:1.6;margin:14px 0 0}
+.sw{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:12px;border:2px solid var(--line);border-radius:12px;background:transparent;color:inherit;margin-bottom:8px;cursor:pointer;font:inherit}
+.sw.on{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 22%,transparent)}
+.dot{width:18px;height:18px;border-radius:50%;background:var(--c);flex:none}
+.sw b{display:block}
+.sw small{color:var(--mute);font-size:12px}
+label{display:block;margin-top:14px;font-size:14px}
+input[type=range]{width:100%;margin-top:6px;accent-color:#d4af37}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>⌨️ 타닥타닥</h1>
+  </header>
+  <main class="card">
+    <div class="chips" id="cats"></div>
+    <div class="stage">
+      <div class="word" id="word"></div>
+      <div class="next" id="next"></div>
+    </div>
+    <div class="stats">
+      <div><b id="sKeys">0</b><small>입력</small></div>
+      <div><b id="sWords">0</b><small>완성한 단어</small></div>
+      <div><b id="sCombo">0</b><small>콤보</small></div>
+    </div>
+    <div class="last"><span class="cap" id="cap">–</span></div>
+  </main>
+  <aside class="card">
+    <div id="sw"></div>
+    <label><input id="vol" type="range" min="0" max="100" value="70"></label>
+  </aside>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const DICT={
+ food:["김치찌개","떡볶이","비빔밥","삼겹살","초콜릿","아이스크림","불고기","라면","샌드위치","팥빙수","김밥","치킨","냉면","감자튀김","마카롱"],
+ animal:["고양이","강아지","코끼리","펭귄","다람쥐","기린","돌고래","오리너구리","햄스터","호랑이","토끼","부엉이","카멜레온","수달"],
+ place:["제주도","경복궁","해운대","에펠탑","지중해","놀이공원","도서관","기차역","사막","항구","전망대","온천","캠핑장","수족관"],
+ tech:["알고리즘","인공지능","데이터베이스","자바스크립트","서버","브라우저","키보드","해상도","프로그래밍","클라우드","업데이트","비밀번호","블루투스","해커톤"],
+ nature:["무지개","단풍","파도","은하수","소나기","벚꽃","반딧불이","폭포","오로라","노을","이슬","안개","지평선","소나무"],
+ mind:["설렘","평온","행복","여유","위로","그리움","용기","감사","포근함","두근두근","쉼표","희망","웃음","휴식"],
+ english:["keyboard","galaxy","serenity","coffee","journey","mountain","whisper","sunshine","rainbow","thunder","library","imagination","adventure","chocolate","relax"]
+};
+const CATS=[["mix","섞어서"],["food","음식"],["animal","동물"],["place","장소"],["tech","IT·기술"],["nature","자연"],["mind","마음"],["english","English"]];
+const SW=[
+ {id:"blue",name:"청축",desc:"“딸깍” 경쾌한 클릭음과 뚜렷한 걸림",c:"#3b82f6"},
+ {id:"red",name:"적축",desc:"“툭” 부드럽고 조용한 리니어",c:"#ef4444"},
+ {id:"brown",name:"갈축",c:"#a0693b"},
+ {id:"type",name:"타자기",c:"#d4af37"}
+];
+
+/* ---------- 한글 → 두벌식 키 ---------- */
+const L=[..."ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ"],V=[..."ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ"];
+const T=["",..."ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ"];
+const SP={"ㅘ":"ㅗㅏ","ㅙ":"ㅗㅐ","ㅚ":"ㅗㅣ","ㅝ":"ㅜㅓ","ㅞ":"ㅜㅔ","ㅟ":"ㅜㅣ","ㅢ":"ㅡㅣ","ㄳ":"ㄱㅅ","ㄵ":"ㄴㅈ","ㄶ":"ㄴㅎ","ㄺ":"ㄹㄱ","ㄻ":"ㄹㅁ","ㄼ":"ㄹㅂ","ㄽ":"ㄹㅅ","ㄾ":"ㄹㅌ","ㄿ":"ㄹㅍ","ㅀ":"ㄹㅎ","ㅄ":"ㅂㅅ"};
+const KEY={};
+"ㅂq ㅃq ㅈw ㅉw ㄷe ㄸe ㄱr ㄲr ㅅt ㅆt ㅛy ㅕu ㅑi ㅐo ㅒo ㅔp ㅖp ㅁa ㄴs ㅇd ㄹf ㅎg ㅗh ㅓj ㅏk ㅣl ㅋz ㅌx ㅊc ㅍv ㅠb ㅜn ㅡm".split(" ").forEach(s=>KEY[s[0]]="Key"+s[1].toUpperCase());
+function build(w){
+  const keys=[],cnt=[];
+  for(const ch of w){
+    const c=ch.charCodeAt(0);
+    if(c>=0xAC00&&c<=0xD7A3){
+      const n=c-0xAC00,j=[...(SP[L[n/588|0]]||L[n/588|0]),...(SP[V[(n%588)/28|0]]||V[(n%588)/28|0]),...(SP[T[n%28]]||T[n%28])];
+      j.forEach(x=>keys.push(KEY[x]));cnt.push(j.length);
+    }else if(/[a-z]/i.test(ch)){keys.push("Key"+ch.toUpperCase());cnt.push(1)}
+    else cnt.push(0);
+  }
+  return {word:w,keys,cnt};
+}
+
+/* ---------- 소리 (Web Audio 합성) ---------- */
+let ctx,master,noise,sw="blue",vol=.7;
+function wake(){
+  if(!ctx){
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    ctx=new AC();
+    const comp=ctx.createDynamicsCompressor();
+    master=ctx.createGain();master.gain.value=vol*.8;
+    master.connect(comp);comp.connect(ctx.destination);
+    noise=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);
+    const d=noise.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  }
+  if(ctx.state!=="running")ctx.resume();
+}
+function B(t,f,q,d,g,type){
+  const s=ctx.createBufferSource(),fl=ctx.createBiquadFilter(),a=ctx.createGain();
+  s.buffer=noise;fl.type=type||"bandpass";fl.frequency.value=f;fl.Q.value=q;
+  a.gain.setValueAtTime(g,t);a.gain.exponentialRampToValueAtTime(.0001,t+d);
+  s.connect(fl);fl.connect(a);a.connect(master);s.start(t,Math.random()*.5,d+.02);
+}
+function Tn(t,f,d,g){
+  const o=ctx.createOscillator(),a=ctx.createGain();
+  o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*.55,t+d);
+  a.gain.setValueAtTime(g,t);a.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(a);a.connect(master);o.start(t);o.stop(t+d+.02);
+}
+function bell(){if(!ctx)return;const t=ctx.currentTime+.05;Tn(t,2600,.7,.22);Tn(t,3900,.5,.1);B(t+.1,1200,1,.25,.25)}
+const isBig=c=>/^(Space|Enter|Backspace|Shift|Tab|Caps)/.test(c);
+function down(code){
+  if(!ctx)return;
+  const t=ctx.currentTime+.001,big=isBig(code),p=(big?.72:1)*(.94+Math.random()*.12),g=.9+Math.random()*.2;
+  const bottom=u=>{B(u,1700*p,.7,.055,.8*g,"lowpass");Tn(u,185*p,.09,.55*g);if(big)B(u+.01,900,1,.08,.18*g)};
+  if(sw==="type"){B(t,2600*p,2,.02,.8*g);B(t,6500*p,4,.01,.4*g);Tn(t,950*p,.05,.18*g);B(t+.012,1100*p,.8,.09,1*g,"lowpass");Tn(t+.012,125*p,.11,.7*g);B(t+.04,1900*p,1,.03,.4*g);if(big)B(t+.03,700,1,.12,.3*g)}
+  else if(sw==="blue"){B(t,4300*p,4,.016,.55*g);B(t+.007,5400*p,5,.012,.35*g);Tn(t,2800*p,.02,.07*g);bottom(t+.024)}
+  else if(sw==="red"){B(t,3200*p,2,.008,.1*g);bottom(t+.002)}
+  else{B(t,2300*p,1.5,.012,.3*g);bottom(t+.014)}
+}
+function up(code){
+  if(!ctx)return;
+  const t=ctx.currentTime+.001,p=(isBig(code)?.75:1)*(.95+Math.random()*.1);
+  if(sw==="type")B(t,2000*p,3,.012,.2);else if(sw==="blue")B(t,3600*p,4,.01,.25);else if(sw==="red")B(t,2600*p,2,.008,.08);else B(t,2900*p,2,.009,.12);
+}
+
+/* ---------- 상태 ---------- */
+let cat="mix",q=[],W,pos=0,keys=0,words=0,combo=0,lock=false;
+const pool=()=>cat==="mix"?Object.values(DICT).flat():DICT[cat];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+function save(){try{localStorage.setItem("tdk",JSON.stringify({sw,cat,vol}))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem("tdk")||"{}");if(s.sw)sw=s.sw;if(s.cat)cat=s.cat;if(typeof s.vol==="number")vol=s.vol}catch(e){}}
+function render(){
+  let cum=0,h="";
+  [...W.word].forEach((ch,i)=>{const end=cum+W.cnt[i];h+=`<span class="${pos>=end?"d":pos>=cum?"c":""}">${ch}</span>`;cum=end});
+  $("#word").innerHTML=h;
+  $("#next").innerHTML=q.slice(0,4).map(w=>`<span>${w}</span>`).join("");
+}
+function nextWord(){
+  if(q.length<5)q.push(...shuffle(pool()));
+  W=build(q.shift());pos=0;lock=false;render();
+}
+function stats(){$("#sKeys").textContent=keys;$("#sWords").textContent=words;$("#sCombo").textContent=combo}
+function flash(c){const w=$("#word");w.classList.remove("shake","ok");void w.offsetWidth;w.classList.add(c)}
+
+/* ---------- UI 구성 ---------- */
+function drawCats(){
+  $("#cats").innerHTML=CATS.map(([id,n])=>`<button class="chip ${id===cat?"on":""}" data-id="${id}">${n}</button>`).join("");
+}
+function drawSw(){
+  $("#sw").innerHTML=SW.map(s=>`<button class="sw ${s.id===sw?"on":""}" data-id="${s.id}" style="--c:${s.c}"><span class="dot"></span><b>${s.name}</b></button>`).join("");
+}
+$("#cats").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  cat=b.dataset.id;q=[];drawCats();nextWord();save();b.blur();
+});
+$("#sw").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  sw=b.dataset.id;drawSw();save();wake();down("KeyA");
+  setTimeout(()=>up("KeyA"),90);
+});
+$("#vol").addEventListener("input",e=>{
+  vol=e.target.value/100;if(master)master.gain.value=vol*.8;save();
+});
+
+/* ---------- 키 입력 ---------- */
+addEventListener("keydown",e=>{
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.target&&e.target.tagName==="INPUT")return;
+  if(e.code==="Space"||e.code==="Backspace"||e.code.startsWith("Arrow"))e.preventDefault();
+  if(e.repeat)return;
+  wake();down(e.code);
+  const k=e.code,cap=$("#cap");
+  cap.textContent=k.startsWith("Key")?k.slice(3):k.startsWith("Digit")?k.slice(5):e.key==="Process"||e.key===" "?k.replace("Space","␣"):e.key;
+  cap.classList.add("p");
+  keys++;
+  if(!lock){
+    if(k===W.keys[pos]){
+      pos++;combo++;render();
+      if(pos>=W.keys.length){lock=true;words++;flash("ok");if(sw==="type")bell();setTimeout(nextWord,220)}
+    }else if(k.startsWith("Key")){combo=0;flash("shake")}
+  }
+  stats();
+});
+addEventListener("keyup",e=>{
+  if(e.target&&e.target.tagName==="INPUT")return;
+  wake();up(e.code);$("#cap").classList.remove("p");
+});
+
+load();$("#vol").value=Math.round(vol*100);
+drawCats();drawSw();nextWord();stats();
+</script>
+</body>
+</html>
